@@ -1,1 +1,3 @@
-# socket-
+主要是为NIO和BIO的通信写一个demo，理解io和nio的区别并且实现一个简单的多人聊天功能。
+其实在其基础上，只要记录双方的remoteaddress，就能够实现单人聊天，这样是一个不错的选择。
+而且，在线程的管理上可以使用newcachedThreadPool进行线程管理，也是不错的选择。
