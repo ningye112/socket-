@@ -1,0 +1,75 @@
+package Client;
+
+
+
+import com.sun.org.apache.bcel.internal.Constants;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
+import java.util.Scanner;
+
+public class Client {
+    private Selector selector=null;
+    private SocketChannel sc=null;
+    private static final int PORT=8081;
+    private static final int SIZE=1024;
+    private static final String IP="127.0.0.1";
+
+    Charset charset = Charset.forName("utf-8");
+
+    public Client() throws IOException {
+        selector=Selector.open();
+        sc=SocketChannel.open();
+        InetSocketAddress remote=new InetSocketAddress(IP,PORT);
+        sc.connect(remote);
+        sc.configureBlocking(false);
+        sc.register(selector,SelectionKey.OP_READ);
+        Scanner in=new Scanner(System.in);
+        String content="";
+        new Thread(new MyThread()).start();
+        while(in.hasNextLine()){
+            content=in.nextLine();
+            sc.write(charset.encode(content));
+        }
+        in.close();
+    }
+
+    class MyThread implements Runnable{
+
+        @Override
+        public void run() {
+            try {
+                while (selector.select() > 0) {
+                    //System.out.println(selector.selectedKeys().size());
+                    for(SelectionKey sk:selector.selectedKeys()){
+                        selector.selectedKeys().remove(sk);
+                        if(sk.isReadable()){
+                            SocketChannel channel= (SocketChannel) sk.channel();
+                            String content="";
+                            ByteBuffer buffer=ByteBuffer.allocate(SIZE);
+                            while(channel.read(buffer)>0){
+                                channel.read(buffer);
+                                buffer.flip();
+                                content+=charset.decode(buffer);
+                            }
+                            System.out.println(content);
+                            sk.interestOps(SelectionKey.OP_READ);
+                        }
+                    }
+                }
+            }catch (IOException e){
+                e.printStackTrace();
+            }
+        }
+    }
+    public static void main(String[] agrs) throws IOException {
+        new Client();
+    }
+
+
+}
